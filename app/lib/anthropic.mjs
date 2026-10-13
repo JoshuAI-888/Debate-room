@@ -28,11 +28,13 @@ export async function stream({ model, system, messages, maxTokens = 2000, onText
     const res = await fetch(URL, {
       method: "POST",
       headers: headers(),
+      signal: AbortSignal.timeout(Number(env("INFERENCE_TIMEOUT_MS") || 120000)),
       body: JSON.stringify({ model, system, messages, max_tokens: maxTokens, stream: true }),
     });
     if (RETRY.has(res.status)) { await sleep(Math.min(30000, 2000 * 2 ** attempt)); continue; }
     if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
     let text = "";
+    let stopped = false, stopReason = "";
     let buf = "";
     const dec = new TextDecoder();
     const finalUsage = {};
@@ -52,12 +54,17 @@ export async function stream({ model, system, messages, maxTokens = 2000, onText
           Object.assign(finalUsage, ev.message?.usage || {});
         } else if (ev.type === "message_delta") {
           Object.assign(finalUsage, ev.usage || {});
+          stopReason = ev.delta?.stop_reason || stopReason;
+        } else if (ev.type === "message_stop") {
+          stopped = true;
         } else if (ev.type === "error") {
           throw new Error(`Anthropic stream error: ${JSON.stringify(ev.error).slice(0, 300)}`);
         }
       }
     }
     addUsage(finalUsage);
+    if (!stopped || !text.trim()) throw new Error("Anthropic stream ended without a complete response");
+    if (stopReason !== "end_turn") throw new Error(`Anthropic advisor stopped with ${stopReason || "unknown reason"}`);
     return text;
   }
   throw new Error("Anthropic API kept refusing after retries");
@@ -69,6 +76,7 @@ export async function json({ model, system, prompt, schema, maxTokens = 4000 }) 
     const res = await fetch(URL, {
       method: "POST",
       headers: headers(),
+      signal: AbortSignal.timeout(Number(env("INFERENCE_TIMEOUT_MS") || 120000)),
       body: JSON.stringify({
         model, system, max_tokens: maxTokens,
         output_config: { format: { type: "json_schema", schema } },
@@ -79,7 +87,7 @@ export async function json({ model, system, prompt, schema, maxTokens = 4000 }) 
     if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
     const j = await res.json();
     addUsage(j.usage);
-    if (j.stop_reason === "max_tokens") throw new Error("Chair output hit max_tokens");
+    if (j.stop_reason !== "end_turn") throw new Error(`Anthropic Chair stopped with ${j.stop_reason || "unknown reason"}`);
     return JSON.parse(j.content.map((b) => b.text || "").join(""));
   }
   throw new Error("Anthropic API kept refusing after retries");

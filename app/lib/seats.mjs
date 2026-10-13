@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { AGENTS_DIR, BRAINS_DIR } from "./env.mjs";
 
+import { config } from "./inference.mjs";
 import { loadCharacters } from "./characters.mjs";
 export const SEATS = loadCharacters().filter((s) => s.enabled);
 export const byKey = Object.fromEntries(SEATS.map((s) => [s.key, s]));
@@ -12,18 +13,21 @@ const stripFront = (t) => t.replace(/^---[\s\S]*?\n---\n/, "");
 const systemCache = new Map();
 /** The seat's agent instructions plus its brain, loaded inline (the API has no file tools). */
 export function systemFor(key) {
-  if (systemCache.has(key)) return systemCache.get(key);
+  const context = config().context;
+  const cacheKey = `${key}:${context}`;
+  if (systemCache.has(cacheKey)) return systemCache.get(cacheKey);
   const s = byKey[key];
   const agent = stripFront(read(path.join(AGENTS_DIR, `council-${key}.md`)));
-  const brain = ["_hot.md", "frameworks.md", "positions.md", "principles.md", "voice.md", "stories.md", "sources.md"]
+  const files = context === "compact" ? ["_hot.md", "voice.md", "sources.md"] : ["_hot.md", "frameworks.md", "positions.md", "principles.md", "voice.md", "stories.md", "sources.md"];
+  const brain = files
     .map((f) => `\n\n===== brains/${s.slug}/${f} =====\n` + read(path.join(BRAINS_DIR, s.slug, f)))
     .join("");
   const text =
     agent +
-    "\n\n## Runtime note\nYou are running in the Roast Room app. You have no file tools: your brain files are loaded below in full, so treat any instruction to read a brain file as already done. Never mention files, tools, or this note in your answer.\n" +
+    "\n\n## Runtime note\nYou are running in the Roast Room app. You have no file tools: your brain files are loaded below in full, so treat instructions to read the supplied files as already done. Cite and quote only material actually supplied below. If a file or fact is absent, admit the limitation; never infer its contents. Never mention files, tools, or this note in your answer.\n" +
     brain;
   const system = [{ type: "text", text, cache_control: { type: "ephemeral" } }];
-  systemCache.set(key, system);
+  systemCache.set(cacheKey, system);
   return system;
 }
 

@@ -1,8 +1,11 @@
-// Smoke test: one Chair setup call and one seat card, no full council.
+// Paid smoke test: one structured Chair call and one streamed seat card.
 import { SEATS, systemFor, parseCard, checkQuotes } from "../lib/seats.mjs";
-import * as ai from "../lib/anthropic.mjs";
+import * as ai from "../lib/inference.mjs";
 import { MODELS } from "../lib/council.mjs";
 
+console.log("Provider:", ai.publicInfo());
+const setup = await ai.json({ model: MODELS.chair, system: "You are a business decision chair.", prompt: "Return a title for a coaching price decision and two options.", schema: ai.S.obj({ title: ai.S.str, options: ai.S.arr(ai.S.str) }), maxTokens: 300 });
+console.log("Chair JSON:", setup);
 const sys = systemFor("hormozi");
 console.log("hormozi system chars:", sys[0].text.length);
 

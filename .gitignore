@@ -6,3 +6,9 @@ node_modules/
 sessions/*
 !sessions/.gitkeep
 !sessions/*example*/
+
+# Keep provider-specific credentials local while shipping templates.
+.env.*
+!.env.example
+!.env.openrouter.example
+!.env.local.example

@@ -80,7 +80,12 @@ Run `npm start`, open http://localhost:4730, and click **Past sessions**. Three 
 
 ## Optional: let the room run councils itself
 
-If you'd rather type a decision straight into the room, copy `.env.example` to `.env`, add an `ANTHROPIC_API_KEY`, set `COUNCIL_RUNNER=api`, and restart `npm start`. That mode bills your Anthropic API account (about 25 calls per full council).
+Type decisions directly into the room using Anthropic, OpenRouter, or a local/hosted
+OpenAI-compatible server. For a cheaper OpenRouter setup, copy
+`.env.openrouter.example` to `.env`, add `OPENROUTER_API_KEY`, and restart
+`npm start`. The budget preset uses cheaper advisors, a compact brain context,
+and Quick mode by default. See [inference setup](docs/inference.md) for providers,
+model overrides, local inference, and JSON compatibility settings.
 
 ## What's inside
 

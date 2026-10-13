@@ -32,24 +32,15 @@ rounds; `--quick` uses fewer seats and two rounds.
 
 ## Run directly from the web app
 
-```bash
-cp .env.example .env
-```
+For OpenRouter budget inference, copy `.env.openrouter.example` to `.env`, add
+`OPENROUTER_API_KEY`, and restart `npm start`. For Anthropic use `.env.example`,
+add `ANTHROPIC_API_KEY`, and set `COUNCIL_RUNNER=api`. For a local compatible
+server, start with `.env.local.example` and set installed model names.
 
-Edit `.env` locally:
-
-```dotenv
-ANTHROPIC_API_KEY=your-key
-COUNCIL_RUNNER=api
-SEAT_MODEL=claude-sonnet-4-6
-CHAIR_MODEL=claude-opus-4-6
-```
-
-Restart `npm start` and enter a decision in the room. This bills your Anthropic
-account. Set model IDs your account supports; both environment variables and
-`.env` overrides are read. `npm run smoke` makes a paid single-seat API test.
-`npm test` runs offline checks without a key. A full default council uses about
-25 calls; more enabled seats increase that count. Never commit `.env`.
+Follow [inference setup](inference.md) for full configuration, preset model
+choices, and compatibility settings. Hosted inference bills your provider
+account. `npm run smoke` makes two real calls to verify Chair JSON and advisor
+streaming. `npm test` uses mock responses and requires no key.
 
 Session files are stored in `sessions/`, ignored by git except included examples.
 PDF export happens in the browser. Keep a backup of your sessions and character

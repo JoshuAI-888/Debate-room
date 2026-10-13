@@ -1,14 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { SEATS, byKey, systemFor, parseCard, checkQuotes } from "./seats.mjs";
-import * as ai from "./anthropic.mjs";
-import { S } from "./anthropic.mjs";
-import { env, SESSIONS_DIR } from "./env.mjs";
+import * as ai from "./inference.mjs";
+import { S } from "./inference.mjs";
+import { SESSIONS_DIR } from "./env.mjs";
 
-export const MODELS = {
-  seat: env("SEAT_MODEL") || "claude-sonnet-4-6",
-  chair: env("CHAIR_MODEL") || "claude-opus-4-6",
-};
+export const MODELS = ai.config().models;
 
 const CHAIR_SYSTEM = `You are the Chair of a Roast Room council. The active simulated advisors are: ${SEATS.map(s => `${s.name} (${s.pillar})`).join(", ")}.
 You never argue a side or add your own pillar. Run the room, keep score, and write in plain English. Seat keys: ${SEATS.map(s => s.key).join(", ")}. Use these display names in prose: ${SEATS.map(s => `${s.key}: ${s.short}`).join(", ")}. Role characters are original analytical perspectives; public-person characters are simulations, never the real people.`;
@@ -310,6 +307,9 @@ async function runSeat(s, st, round, key, prompt) {
     throw e;
   }
   const parsed = parseCard(text, st.options.map((o) => o.id));
+  for (const option of st.options) {
+    if (typeof parsed.optionScores[option.id] !== "number") throw new Error(`${seat.short} omitted option ${option.id} score. Try a stronger SEAT_MODEL.`);
+  }
   const quotes = checkQuotes(key, text);
   st.cards[round][key] = { text, parsed, quotes };
   emit(s, "seat_done", { round, seat: key, text, parsed, quotes, name: seat.name });
@@ -318,7 +318,14 @@ async function runSeat(s, st, round, key, prompt) {
 async function roundAll(s, st, round, promptFn) {
   emit(s, "round_start", { round });
   // stagger starts slightly so speech bubbles open in a ripple around the table
-  await Promise.all(st.seats.map((k, i) => new Promise((r) => setTimeout(r, i * 350)).then(() => runSeat(s, st, round, k, promptFn(st, byKey[k])))));
+  let failure;
+  await Promise.allSettled(st.seats.map(async (k, i) => {
+    await new Promise(r => setTimeout(r, i * 350));
+    if (failure) return; // Do not launch more paid calls after a known failure.
+    try { await runSeat(s, st, round, k, promptFn(st, byKey[k])); }
+    catch (error) { failure ||= error; }
+  }));
+  if (failure) throw failure; // In-flight calls settle before the council unlocks.
   const scores = optionScores(st, round);
   st.scores[round] = scores;
   emit(s, "round_done", { round, scores });
@@ -339,6 +346,7 @@ async function run(s) {
   const st = (s.state = { prompt: s.prompt, mode: s.mode, cards: { 1: {}, 2: {}, 3: {} }, scores: {}, rounds: [] });
   emit(s, "phase", { phase: "setup", label: "The Chair is reading your question" });
   const setup = await chairSetup(st);
+  if (setup.options.length < 2 || setup.options.length > 4 || new Set(setup.options.map(o => o.id)).size !== setup.options.length) throw new Error("Chair must supply 2 to 4 distinct options. Try a stronger CHAIR_MODEL.");
   Object.assign(st, {
     title: setup.title, decision: setup.decision, brief: setup.brief,
     options: setup.options, assumptions: setup.assumptions,

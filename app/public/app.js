@@ -69,7 +69,10 @@ async function boot() {
   state.seats = r.seats;
   state.byKey = Object.fromEntries(r.seats.map((s) => [s.key, s]));
   state.runner = r.runner;
-  if (r.runner === "api" && !r.hasKey) toast("No ANTHROPIC_API_KEY found in .env. Add it and restart the server.");
+  $('input[name="mode"][value="quick"]').checked = r.profile === "budget";
+  $('input[name="mode"][value="full"]').checked = r.profile !== "budget";
+  $('input[name="mode"][value="full"]').closest("label").querySelector("small").textContent = `${state.seats.length} seats, 3 rounds`;
+  if (r.runner === "api" && !r.hasKey) toast(r.configurationError || "Configure your inference provider in .env and restart the server.");
   renderSeats();
   renderSamples();
   bindUI();
