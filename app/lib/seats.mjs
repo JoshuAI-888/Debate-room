@@ -2,15 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { AGENTS_DIR, BRAINS_DIR } from "./env.mjs";
 
-export const SEATS = [
-  { key: "bezos", name: "Jeff Bezos", short: "Bezos", initials: "JB", slug: "jeff-bezos", pillar: "Strategy and decisions", question: "Is this the right bet, and how reversible is it?", dimension: "Strategic fit and reversibility", color: "#e8a33d" },
-  { key: "graham", name: "Paul Graham", short: "Graham", initials: "PG", slug: "paul-graham", pillar: "Product and startups", question: "Is this something people actually want, and is it growing?", dimension: "Real demand and growth", color: "#f06b3f" },
-  { key: "hormozi", name: "Alex Hormozi", short: "Hormozi", initials: "AH", slug: "alex-hormozi", pillar: "Offers, pricing, and sales", question: "Will people pay, how much, and how do we close?", dimension: "Offer strength and unit economics", color: "#d94a6a" },
-  { key: "garyvee", name: "Gary Vaynerchuk", short: "Gary V", initials: "GV", slug: "gary-vaynerchuk", pillar: "Marketing and attention", question: "Where does the attention come from, and is it underpriced?", dimension: "Attention and distribution", color: "#9b5de5" },
-  { key: "martell", name: "Dan Martell", short: "Martell", initials: "DM", slug: "dan-martell", pillar: "People, hiring, and founder time", question: "Who does this, and what does it cost the founder's calendar?", dimension: "Team capacity and founder time", color: "#3d8bfd" },
-  { key: "wickman", name: "Gino Wickman", short: "Wickman", initials: "GW", slug: "gino-wickman", pillar: "Operations and scaling", question: "Can the business run this without the founder holding it together?", dimension: "Operational readiness", color: "#1fa67a" },
-  { key: "buffett", name: "Warren Buffett", short: "Buffett", initials: "WB", slug: "warren-buffett", pillar: "Money and capital", question: "What does it do to cash, risk, and long-term value?", dimension: "Downside and capital efficiency", color: "#4c6a92" },
-];
+import { loadCharacters } from "./characters.mjs";
+export const SEATS = loadCharacters().filter((s) => s.enabled);
 export const byKey = Object.fromEntries(SEATS.map((s) => [s.key, s]));
 
 const read = (p) => (fs.existsSync(p) ? fs.readFileSync(p, "utf8") : "");
@@ -22,7 +15,7 @@ export function systemFor(key) {
   if (systemCache.has(key)) return systemCache.get(key);
   const s = byKey[key];
   const agent = stripFront(read(path.join(AGENTS_DIR, `council-${key}.md`)));
-  const brain = ["_hot.md", "frameworks.md", "positions.md", "principles.md", "voice.md"]
+  const brain = ["_hot.md", "frameworks.md", "positions.md", "principles.md", "voice.md", "stories.md", "sources.md"]
     .map((f) => `\n\n===== brains/${s.slug}/${f} =====\n` + read(path.join(BRAINS_DIR, s.slug, f)))
     .join("");
   const text =

@@ -22,11 +22,11 @@ Bring a hard business decision and seven AI advisors argue it out, then hand you
 ## Setup
 
 ```bash
-git clone https://github.com/nateherkai/roast-room.git
-cd roast-room
+git clone https://github.com/JoshuAI-888/Debate-room.git
+cd Debate-room
 ```
 
-Or open Claude Code anywhere and say: "Clone github.com/nateherkai/roast-room and start the room for me."
+Or open Claude Code anywhere and say: "Clone github.com/JoshuAI-888/Debate-room and start the room for me."
 
 ## Run a roast
 
@@ -96,3 +96,15 @@ If you'd rather type a decision straight into the room, copy `.env.example` to `
 These are simulations built from each person's public work. They are not the people, they don't speak for them, and none of them is affiliated with or endorses this project. A seat only quotes a person verbatim when the line is in its brain with a source, and `python .claude/skills/roast-room/scripts/check_quotes.py sessions/<session>` checks every quote in a council against the brains. Each brain's `sources.md` lists what it was built from.
 
 Built by AI Automation Society. The code is MIT licensed; see `LICENSE`. The PDF builder bundles [jsPDF](https://github.com/parallax/jsPDF) (MIT) and [Montserrat](https://github.com/JulietaUla/Montserrat) (SIL Open Font License); their licenses sit next to them in `app/public/`.
+
+## Create and research characters
+
+See [Character research workflow](docs/character-research.md) and [Setup and running](docs/setup.md).
+The active lineup now lives in `characters/registry.json`. Two original role characters,
+Customer Advocate (`customer`) and Risk Analyst (`risk`), are provided ready but disabled.
+Enable one with `npm run characters -- enable customer`, then restart the room.
+New people start as disabled drafts and must pass a research review before activation.
+
+Charlie Munger (`munger`) is enabled as the eighth seat, grounded in three public
+talks. His [source register](.claude/skills/roast-room/brains/munger/sources.md)
+records transcript limitations and evaluation briefs.

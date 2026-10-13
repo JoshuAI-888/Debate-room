@@ -88,3 +88,12 @@ Run the same protocol sequentially yourself. For each seat, read `.claude/agents
 - `scripts/check_quotes.py`: verifies every attributed quote in a session against the brains.
 - Agents: `.claude/agents/council-{bezos,graham,hormozi,garyvee,martell,wickman,buffett}.md`.
 - The room app: `app/` (start at the project `README.md`).
+
+## Custom character registry
+
+Before choosing seats, read `characters/registry.json`. Use entries with `enabled: true`
+and `status: ready`; the registry overrides the original seven-seat lineup. Resolve
+agents as `.claude/agents/council-<key>.md` and brains by the entry's `slug`.
+For explicit `--seats` or `ask`, accept any ready registry entry. Never run drafts.
+Role characters are original perspectives, not simulations of a real person.
+Read `docs/character-research.md` when creating or maintaining a character.

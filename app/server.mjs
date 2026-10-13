@@ -38,8 +38,9 @@ const server = http.createServer(async (req, res) => {
     if (p === "/api/council" && req.method === "POST") {
       if (RUNNER !== "api") return send(res, 403, { error: "This room is a viewer. Run /roast-room in Claude Code, or set COUNCIL_RUNNER=api in .env." });
       if (running && getSession(running)?.status === "running") return send(res, 409, { error: "A council is already in session. Wait for its verdict." });
+      if (!env("ANTHROPIC_API_KEY")) return send(res, 503, { error: "Add ANTHROPIC_API_KEY to .env and restart the room." });
       const { prompt, mode } = await readJson(req);
-      if (!prompt || prompt.trim().length < 10) return send(res, 400, { error: "Give the council a real decision (at least a sentence)." });
+      if (typeof prompt !== "string" || prompt.trim().length < 10) return send(res, 400, { error: "Give the council a real decision (at least a sentence)." });
       const s = startCouncil(prompt.trim().slice(0, 4000), mode === "quick" ? "quick" : "full");
       running = s.id;
       return send(res, 200, { id: s.id });

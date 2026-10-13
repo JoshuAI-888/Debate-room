@@ -3,15 +3,15 @@ import path from "node:path";
 import { SEATS, byKey, systemFor, parseCard, checkQuotes } from "./seats.mjs";
 import * as ai from "./anthropic.mjs";
 import { S } from "./anthropic.mjs";
-import { SESSIONS_DIR } from "./env.mjs";
+import { env, SESSIONS_DIR } from "./env.mjs";
 
 export const MODELS = {
-  seat: process.env.SEAT_MODEL || "claude-sonnet-5-5",
-  chair: process.env.CHAIR_MODEL || "claude-opus-5-5",
+  seat: env("SEAT_MODEL") || "claude-sonnet-4-6",
+  chair: env("CHAIR_MODEL") || "claude-opus-4-6",
 };
 
-const CHAIR_SYSTEM = `You are the Chair of a Roast Room council: seven simulated advisors built from the public work of Jeff Bezos (strategy and decisions), Paul Graham (product and startups), Alex Hormozi (offers, pricing, and sales), Gary Vaynerchuk (marketing and attention), Dan Martell (people, hiring, and founder time), Gino Wickman (operations and scaling), and Warren Buffett (money and capital).
-You never argue a side and never add your own pillar. You run the room, keep score, and write in plain English: short sentences, no em dashes, no hype, no tee-ups like "here's the thing", no filler. Seat keys (for key fields only): bezos, graham, hormozi, garyvee, martell, wickman, buffett. Whenever you write a seat's name in prose or in a seat field, use its display name: Bezos, Graham, Hormozi, Gary V, Martell, Wickman, Buffett.`;
+const CHAIR_SYSTEM = `You are the Chair of a Roast Room council. The active simulated advisors are: ${SEATS.map(s => `${s.name} (${s.pillar})`).join(", ")}.
+You never argue a side or add your own pillar. Run the room, keep score, and write in plain English. Seat keys: ${SEATS.map(s => s.key).join(", ")}. Use these display names in prose: ${SEATS.map(s => `${s.key}: ${s.short}`).join(", ")}. Role characters are original analytical perspectives; public-person characters are simulations, never the real people.`;
 
 export const DISCLAIMER = "Simulated advisors built from each person's public work. They are not the people and do not speak for them.";
 

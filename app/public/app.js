@@ -55,7 +55,7 @@ const GUIDE = `
   </div>`;
 
 const SHAPES = ["base", "open", "mid", "blink"];
-const portrait = (key, shape = "base") => `/portraits/${key}-${shape}.webp`;
+const portrait = (key, shape = "base") => state.byKey[key]?.avatar || `/portraits/${key}-${shape}.webp`;
 const ROUND_NAME = ["", "Opening", "Debate", "Vote"];
 
 const state = {
@@ -142,7 +142,7 @@ function layoutStage() {
   const t = $("#table");
   Object.assign(t.style, { left: `${cx - rx}px`, top: `${cy - ry}px`, width: `${rx * 2}px`, height: `${ry * 2}px` });
   const edge = (x) => cy - ry * Math.sqrt(Math.max(0, 1 - ((x - cx) / rx) ** 2));
-  const xs = [0.085, 0.222, 0.361, 0.5, 0.639, 0.778, 0.915];
+  const xs = state.seats.map((_, i) => state.seats.length === 1 ? 0.5 : 0.085 + i * 0.83 / (state.seats.length - 1));
   state.seats.forEach((s, i) => {
     const x = W * xs[i];
     const d = ((x - cx) / rx) ** 2;
@@ -161,7 +161,7 @@ function layoutStage() {
   } else {
     stage.style.paddingTop = "";
     // the captions start below the lowest nameplate they could collide with
-    const inner = [1, 2, 3, 4, 5].map((i) => $(`#plate-${state.seats[i].key}`));
+    const inner = state.seats.map((s) => $(`#plate-${s.key}`));
     const top = Math.max(...inner.map((p) => p.offsetTop + p.offsetHeight / 2)) + H * 0.035;
     Object.assign(c.style, { left: `${W * 0.2}px`, width: `${W * 0.6}px`, top: `${top}px`, height: `${H - top - H * 0.09}px` });
   }
