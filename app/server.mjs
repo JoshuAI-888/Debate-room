@@ -3,8 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { APP_ROOT, env } from "./lib/env.mjs";
 import { SEATS } from "./lib/seats.mjs";
-import { startCouncil, getSession, subscribe, listSaved, loadSaved, MODELS } from "./lib/council.mjs";
-import { usage } from "./lib/anthropic.mjs";
+import { startCouncil, getSession, subscribe, listSaved, loadSaved } from "./lib/council.mjs";
+import { usage, publicInfo } from "./lib/inference.mjs";
 import * as watch from "./lib/watch.mjs";
 
 const PORT = Number(process.env.PORT) || 4730;
@@ -14,7 +14,7 @@ const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; ch
 let running = null; // one council at a time (API runner)
 
 // "viewer" (default): the room plays councils that /roast-room runs in Claude Code.
-// "api": the room can also run councils itself on ANTHROPIC_API_KEY (COUNCIL_RUNNER=api in .env).
+// "api": the room can also run councils itself on the configured inference provider (COUNCIL_RUNNER=api in .env).
 const RUNNER = (process.env.COUNCIL_RUNNER || env("COUNCIL_RUNNER") || "viewer").toLowerCase() === "api" ? "api" : "viewer";
 watch.startWatching();
 
@@ -33,13 +33,15 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const p = url.pathname;
   try {
-    if (p === "/api/seats") return send(res, 200, { seats: SEATS, models: MODELS, runner: RUNNER, hasKey: Boolean(env("ANTHROPIC_API_KEY")) });
+    if (p === "/api/seats") return send(res, 200, { seats: SEATS, runner: RUNNER, ...publicInfo() });
     if (p === "/api/usage") return send(res, 200, usage);
     if (p === "/api/council" && req.method === "POST") {
       if (RUNNER !== "api") return send(res, 403, { error: "This room is a viewer. Run /roast-room in Claude Code, or set COUNCIL_RUNNER=api in .env." });
       if (running && getSession(running)?.status === "running") return send(res, 409, { error: "A council is already in session. Wait for its verdict." });
+      const info = publicInfo();
+      if (!info.hasKey) return send(res, 503, { error: info.configurationError });
       const { prompt, mode } = await readJson(req);
-      if (!prompt || prompt.trim().length < 10) return send(res, 400, { error: "Give the council a real decision (at least a sentence)." });
+      if (typeof prompt !== "string" || prompt.trim().length < 10) return send(res, 400, { error: "Give the council a real decision (at least a sentence)." });
       const s = startCouncil(prompt.trim().slice(0, 4000), mode === "quick" ? "quick" : "full");
       running = s.id;
       return send(res, 200, { id: s.id });

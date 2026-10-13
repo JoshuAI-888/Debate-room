@@ -13,14 +13,17 @@ export const SESSIONS_DIR = KIT ? path.join(REPO_ROOT, "sessions") : path.join(R
 
 let cache = null;
 export function env(key) {
-  if (process.env[key]) return process.env[key];
+  if (Object.hasOwn(process.env, key)) return process.env[key];
   if (!cache) {
     cache = {};
     const p = path.join(REPO_ROOT, ".env");
     if (fs.existsSync(p)) {
       for (const line of fs.readFileSync(p, "utf8").split(/\r?\n/)) {
         const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-        if (m && !(m[1] in cache)) cache[m[1]] = m[2].trim();
+        if (m && !(m[1] in cache)) {
+          const value = m[2].trim();
+          cache[m[1]] = value.replace(/^(['"])(.*)\1$/, "$2");
+        }
       }
     }
   }
